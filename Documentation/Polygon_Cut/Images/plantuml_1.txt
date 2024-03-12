@@ -1,0 +1,157 @@
+@startuml
+
+enum Type {
+  NoIntersection = 0
+  IntersectionOnLine = 1 
+  IntersectionOnSegment = 2 
+  IntersectionParallelOnLine = 3
+  IntersectionParallelOnSegment = 4
+}
+enum Position {
+  Begin = 0
+  Inner = 1
+  End = 2
+  Outer = 3
+  Default = 4
+}
+
+package "Data Transfer Object (DTO)" <<Database>> {
+  class Point
+  {
+    +X: double
+    +Y: double
+  }
+
+  class Segment
+  {
+    +From: int
+    +To: int
+  }
+  
+  class Polygon
+  {
+    +NumberVertices
+    +PolygonVertices: vector<int>
+  }
+}
+
+note bottom of Segment
+  <b>From</b> e <b>To</b> sono indici rispetto a un
+  vettore di <b>Point</b> in GeometryFactory
+end note
+
+note bottom of Polygon
+  <b>pointVertices</b> è un vettore di indici rispetto
+  a un vettore di <b>Point</b> in GeometryFactory
+end note
+
+package "Geometry Library" <<Folder>> {
+  interface IGeometryFactory
+  {
+    .. Importer ..
+    +void CreatePolygon()
+    .. Getters ..
+    +int GetPointsNumber()
+    +Polygon GetPolygon()
+    +Segment GetPolygonEdge(int edgePosition)
+    +vector<Segment> GetAllEdges()
+    +Segment GetLine()
+    +Point GetPoint(int idPoint)
+    +Point GetPointAddress(Point point)
+    +int GetNumberSubPolygon()
+    +Polygon GetSubPolygon(int idPolygon)
+    +vector<Polygon> GetAllPolygons()
+    .. Setters ..
+    +void SetPoints(Point point)
+    +void SetSubPolygons(Polygon newSubPolygon)
+  }
+  
+  interface IPolygonEdit
+  {
+    .. Getters ..
+    +IGeometryFactory GetProblem()
+    +Point GetPoint(int idPoint)
+    ....
+    +int CheckSide(int pointId)
+    +void CutPolygon()
+  }
+}
+
+package "Intersector" <<Folder>> {
+  class SegmentIntersector
+  {
+    .. Setters ..
+    +void SetFirstSegment(Vector2d origin, Vector2d end)
+    +void SetSecondSegment(Vector2d origin, Vector2d end)
+    ....
+    +bool ComputeIntersection()
+    ....
+    +double ToleranceIntersection()
+    +double ToleranceParallelism()
+    .. Getters ..
+    +Vector2d ParametricCoordinates()
+    +double FirstParametricCoordinate()
+    +double SecondParametricCoordinate()
+    +Position PositionIntersectionInFirstEdge()
+    +Position PositionIntersectionInSecondEdge()
+    +Type TypeIntersection()
+    +Vector2d IntersectionFirstParametricCoordinate(Vector2d origin, Vector2d end)
+    +Vector2d IntersectionSecondParametricCoordinate(Vector2d origin, Vector2d end)
+    +bool ParallelTwistHappened()
+  }
+}
+
+package "PolygonEditLibrary" <<Folder>> {
+  class PolygonEdit
+  {
+    
+  }
+
+}
+
+package "PolygonCuttersLibrary" <<Folder>> {
+  class ConcaveCutter
+  {
+    +void ComputeNewPoint()
+    +void FindSubPolygons()
+  }
+  class ConvexCutter
+  {
+    +void ComputeNewPoint()
+    +void FindSubPolygons()
+  }
+
+}
+
+package "PolygonViewerLibrary" <<Folder>> {
+  class PolygonViewer
+  {
+    +void viewPolygon()
+    +void viewLine()
+    +void viewFinishedProblem()
+  }
+
+}
+
+IGeometryFactory "1" *-- "*" Point : contains
+IGeometryFactory "1" *-- "*" Segment : contains
+IGeometryFactory "1" *-- "*" Polygon : contains
+
+SegmentIntersector "1" *-- "*" Vector2d : contains
+SegmentIntersector "1" *-- "*" Matrix2d : contains
+SegmentIntersector o-- Type : uses
+SegmentIntersector o-- Position : uses
+
+IPolygonEdit ..> IGeometryFactory : depends
+
+PolygonEdit ..|> IPolygonEdit: implements
+
+ConvexCutter -- ConcaveCutter
+(ConvexCutter, ConcaveCutter) --|> PolygonEdit : extends
+
+ConvexCutter o-- SegmentIntersector : uses
+ConcaveCutter o-- SegmentIntersector : uses
+
+PolygonViewer ..> IGeometryFactory : depends
+
+@enduml
